@@ -38,18 +38,18 @@ interface Schedule {
 
 // Vaccine color mapping for visual distinction
 const VACCINE_COLORS: Record<string, string> = {
-  HepB: "bg-blue-100 text-blue-800 border-blue-200",
-  DTaP: "bg-green-100 text-green-800 border-green-200",
-  Tdap: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  IPV: "bg-purple-100 text-purple-800 border-purple-200",
-  Hib: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  PCV: "bg-orange-100 text-orange-800 border-orange-200",
-  MMR: "bg-red-100 text-red-800 border-red-200",
-  Varicella: "bg-pink-100 text-pink-800 border-pink-200",
-  HepA: "bg-indigo-100 text-indigo-800 border-indigo-200",
-  MenACWY: "bg-teal-100 text-teal-800 border-teal-200",
-  "MenACWY-Booster": "bg-teal-100 text-teal-800 border-teal-200",
-  HPV: "bg-rose-100 text-rose-800 border-rose-200",
+  HepB:              "bg-blue-200 text-blue-900 border-blue-400",
+  DTaP:              "bg-green-200 text-green-900 border-green-400",
+  Tdap:              "bg-lime-200 text-lime-900 border-lime-400",
+  IPV:               "bg-violet-200 text-violet-900 border-violet-400",
+  Hib:               "bg-amber-200 text-amber-900 border-amber-400",
+  PCV:               "bg-orange-200 text-orange-900 border-orange-400",
+  MMR:               "bg-red-200 text-red-900 border-red-400",
+  Varicella:         "bg-fuchsia-200 text-fuchsia-900 border-fuchsia-400",
+  HepA:              "bg-indigo-200 text-indigo-900 border-indigo-400",
+  MenACWY:           "bg-cyan-200 text-cyan-900 border-cyan-400",
+  "MenACWY-Booster": "bg-teal-200 text-teal-900 border-teal-400",
+  HPV:               "bg-rose-200 text-rose-900 border-rose-400",
 };
 
 function vaccineColor(shortName: string): string {
