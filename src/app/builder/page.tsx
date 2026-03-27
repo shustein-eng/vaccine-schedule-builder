@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import ScheduleDisplay from "@/components/ScheduleDisplay";
 import { generateStandardSchedule, generateCatchUpSchedule } from "@/lib/scheduleGenerator";
+import type { PriorDoseHistory } from "@/lib/scheduleGenerator";
 import { getVaccinesForGrade, getAllCDCVaccinesForGrade, ALL_CDC_VACCINES, OPTIONAL_VACCINES, STATE_VACCINE_DATA } from "@/data/stateVaccines";
 import type { GradeLevel, VaccineSet, StateVaccineRequirement } from "@/data/stateVaccines";
+import { CDC_SCHEDULE } from "@/data/cdcSchedule";
 
 const GRADES: { value: GradeLevel; label: string }[] = [
   { value: "PK", label: "Pre-K (age ~4)" },
@@ -79,12 +81,52 @@ export default function BuilderPage() {
   const [selectedOptional, setSelectedOptional] = useState<Set<string>>(new Set());
   const [birthDate, setBirthDate] = useState("");
   const [startDate, setStartDate] = useState("");
+
+  // Prior vaccination records: shortName → doseNumber (1-indexed) → ISO date string
+  const [priorHistoryOpen, setPriorHistoryOpen] = useState(false);
+  const [priorDatesRaw, setPriorDatesRaw] = useState<Record<string, Record<number, string>>>({});
   const [entryGrade, setEntryGrade] = useState<GradeLevel>("K");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ schedule: ReturnType<typeof serializeSchedule>; summary: string } | null>(null);
   const [error, setError] = useState("");
 
   const today = new Date().toISOString().split("T")[0];
+
+  // Derive which vaccines to show in the prior history table based on current selections
+  const priorHistoryVaccines = useMemo(() => {
+    if (!stateCode) return [];
+    const stateData = STATE_VACCINE_DATA[stateCode];
+    if (!stateData) return [];
+    let base: StateVaccineRequirement[];
+    if (mode === "birth") {
+      base = vaccineSet === "cdc" ? ALL_CDC_VACCINES : stateData.requirements;
+    } else {
+      base = vaccineSet === "cdc"
+        ? getAllCDCVaccinesForGrade(entryGrade)
+        : getVaccinesForGrade(stateCode, entryGrade);
+    }
+    const existing = new Set(base.map((v) => v.shortName));
+    const extras = OPTIONAL_VACCINES.filter(
+      (v) => selectedOptional.has(v.shortName) && !existing.has(v.shortName)
+    );
+    return [...base, ...extras].map((req) => ({
+      req,
+      maxDoses: Math.min(req.totalDoses, CDC_SCHEDULE[req.shortName]?.doses.length ?? req.totalDoses),
+    }));
+  }, [stateCode, mode, vaccineSet, entryGrade, selectedOptional]);
+
+  const maxDoseCols = useMemo(
+    () => Math.max(...priorHistoryVaccines.map((v) => v.maxDoses), 1),
+    [priorHistoryVaccines]
+  );
+
+  function setPriorDate(shortName: string, doseNum: number, value: string) {
+    setPriorDatesRaw((prev) => ({
+      ...prev,
+      [shortName]: { ...(prev[shortName] ?? {}), [doseNum]: value },
+    }));
+    setResult(null);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -117,12 +159,24 @@ export default function BuilderPage() {
         return [...base, ...extras];
       }
 
+      // Convert raw prior date strings → Date objects (local-time safe)
+      const priorHistory: PriorDoseHistory = {};
+      for (const [shortName, dosesRaw] of Object.entries(priorDatesRaw)) {
+        const parsed: Record<number, Date> = {};
+        for (const [doseNumStr, dateStr] of Object.entries(dosesRaw)) {
+          if (!dateStr) continue;
+          const d = new Date(dateStr + "T00:00:00"); // force local-time parse
+          if (!isNaN(d.getTime())) parsed[Number(doseNumStr)] = d;
+        }
+        if (Object.keys(parsed).length > 0) priorHistory[shortName] = parsed;
+      }
+
       let schedule;
       if (mode === "birth") {
         const base = vaccineSet === "cdc" ? ALL_CDC_VACCINES : stateData.requirements;
         const vaccines = mergeWithOptional(base);
         schedule = generateStandardSchedule(
-          stateCode, stateData.name, new Date(birthDate), vaccines, vaccineSet
+          stateCode, stateData.name, new Date(birthDate + "T00:00:00"), vaccines, vaccineSet, priorHistory
         );
       } else {
         const base = vaccineSet === "cdc"
@@ -130,7 +184,8 @@ export default function BuilderPage() {
           : getVaccinesForGrade(stateCode, entryGrade);
         const vaccines = mergeWithOptional(base, entryGrade);
         schedule = generateCatchUpSchedule(
-          stateCode, stateData.name, new Date(startDate), entryGrade, vaccines, vaccineSet
+          stateCode, stateData.name, new Date(startDate + "T00:00:00"),
+          entryGrade, vaccines, vaccineSet, priorHistory
         );
       }
 
@@ -271,6 +326,94 @@ export default function BuilderPage() {
                 );
               })}
             </div>
+          </div>
+
+          {/* Prior Vaccination Records */}
+          <div className="border-b border-gray-200">
+            <button
+              type="button"
+              onClick={() => setPriorHistoryOpen((v) => !v)}
+              className="w-full flex items-center justify-between px-6 py-4 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+            >
+              <div>
+                <span className="font-semibold text-sm text-gray-700">Prior Vaccination Records</span>
+                <span className="ml-2 text-xs text-gray-400">(optional)</span>
+              </div>
+              <svg
+                className={`w-4 h-4 text-gray-500 transition-transform ${priorHistoryOpen ? "rotate-180" : ""}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {priorHistoryOpen && (
+              <div className="px-6 pb-6 pt-3 space-y-3">
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Enter dates for vaccines the patient has already received. Leave blank if not given.
+                  Dates are validated against CDC minimums with a 4-day grace period. Invalid doses
+                  (given too early or with insufficient spacing) are flagged and re-scheduled.
+                  DTaP dose 5 is automatically waived if dose 4 was given on or after the child&apos;s 4th birthday.
+                </p>
+
+                {!stateCode ? (
+                  <p className="text-xs text-gray-400 italic">Select a state above to see the vaccine list.</p>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border border-gray-200">
+                    <table className="text-xs border-collapse w-full">
+                      <thead>
+                        <tr className="bg-gray-50 border-b border-gray-200">
+                          <th className="text-left px-3 py-2 font-semibold text-gray-600 w-28">Vaccine</th>
+                          {Array.from({ length: maxDoseCols }, (_, i) => (
+                            <th key={i} className="px-2 py-2 font-semibold text-gray-600 text-center whitespace-nowrap">
+                              Dose {i + 1}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {priorHistoryVaccines.map(({ req, maxDoses }) => (
+                          <tr key={req.shortName} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
+                            <td className="px-3 py-2 font-semibold text-gray-700 whitespace-nowrap">{req.shortName}</td>
+                            {Array.from({ length: maxDoseCols }, (_, i) => {
+                              const doseNum = i + 1;
+                              const applicable = doseNum <= maxDoses;
+                              const val = priorDatesRaw[req.shortName]?.[doseNum] ?? "";
+                              return (
+                                <td key={i} className="px-1 py-1.5 text-center">
+                                  {applicable ? (
+                                    <input
+                                      type="date"
+                                      max={today}
+                                      value={val}
+                                      onChange={(e) => setPriorDate(req.shortName, doseNum, e.target.value)}
+                                      className="text-xs border border-gray-200 rounded px-1.5 py-1 w-32
+                                                 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
+                                    />
+                                  ) : (
+                                    <span className="text-gray-300 select-none">—</span>
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {Object.values(priorDatesRaw).some((d) => Object.values(d).some(Boolean)) && (
+                  <button
+                    type="button"
+                    onClick={() => { setPriorDatesRaw({}); setResult(null); }}
+                    className="text-xs text-red-500 hover:text-red-700 transition-colors"
+                  >
+                    Clear all prior records
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 space-y-6">

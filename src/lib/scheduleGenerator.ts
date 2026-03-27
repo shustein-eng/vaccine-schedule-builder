@@ -18,7 +18,7 @@
 //   - HPV catch-up: 154-day minimum (correct for 2-dose series <15 years)
 
 import { GradeLevel, StateVaccineRequirement, VaccineSet } from "@/data/stateVaccines";
-import { CDC_SCHEDULE } from "@/data/cdcSchedule";
+import { CDC_SCHEDULE, VaccineDoseInfo } from "@/data/cdcSchedule";
 import {
   addDays,
   isWeekend,
@@ -29,6 +29,14 @@ import {
 } from "@/data/holidays";
 
 // ─── Public types ─────────────────────────────────────────────────────────────
+
+/**
+ * Prior doses already administered to the patient.
+ * Outer key: vaccine shortName (e.g. "DTaP").
+ * Inner key: dose number, 1-indexed (e.g. 1, 2, 3).
+ * Value: the Date the dose was administered.
+ */
+export type PriorDoseHistory = Record<string, Record<number, Date>>;
 
 export interface ScheduledDose {
   vaccine: string;
@@ -65,6 +73,10 @@ export interface GeneratedSchedule {
   disclaimer: string;
 }
 
+// ─── CDC grace period ─────────────────────────────────────────────────────────
+// Doses administered ≤4 days before the minimum age or interval are still valid.
+const GRACE_DAYS = 4;
+
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
 function seededRng(seed: number): () => number {
@@ -99,6 +111,84 @@ function formatAge(date: Date, birthDate: Date): string {
   return rem === 0
     ? `${years} year${years !== 1 ? "s" : ""}`
     : `${years} yr ${rem} mo`;
+}
+
+interface PriorEval {
+  validCount: number;       // how many prior doses are CDC-valid
+  firstDate: Date | null;   // date of first valid prior dose (seeds firstDoseDate)
+  lastDate: Date | null;    // date of last valid prior dose (seeds lastDoseDate)
+  skipDose5: boolean;       // DTaP: dose 5 not needed (dose 4 on/after 4th birthday)
+}
+
+/**
+ * Validate prior dose dates for a single vaccine against CDC minimums.
+ *
+ * Algorithm: iterate each dose slot in series order. For each slot, check if
+ * the entered date for that dose number passes (a) minimum age (with grace),
+ * (b) minimum interval from the last VALID dose (with grace), and (c) for
+ * HepB dose 3, the ≥16-week-from-dose-1 rule. Valid doses advance the counter
+ * and become the interval anchor; invalid doses are skipped (the slot stays
+ * open for the scheduler to fill).
+ *
+ * DTaP special rule: dose 5 is NOT given if dose 4 was administered on or
+ * after the child's 4th birthday, per CDC.
+ */
+function evaluatePriorDoses(
+  shortName: string,
+  priorDates: Record<number, Date>,
+  birthDate: Date | null,
+  cdcDoses: VaccineDoseInfo[],
+): PriorEval {
+  let validCount = 0;
+  let firstDate: Date | null = null;
+  let lastDate: Date | null = null;
+  let skipDose5 = false;
+
+  for (let i = 0; i < cdcDoses.length; i++) {
+    const doseInfo = cdcDoses[i];
+    const doseNum = doseInfo.doseNumber; // 1-indexed
+    const given = priorDates[doseNum];
+    if (!given) break; // No date for this dose — stop evaluating
+
+    // ── DTaP dose 5 exemption ───────────────────────────────────────────────
+    if (shortName === "DTaP" && doseNum === 5 && birthDate && lastDate) {
+      const fourthBirthday = new Date(
+        birthDate.getFullYear() + 4,
+        birthDate.getMonth(),
+        birthDate.getDate()
+      );
+      if (lastDate >= fourthBirthday) {
+        skipDose5 = true;
+        break; // Series complete; dose 5 not required
+      }
+    }
+
+    // ── Minimum age check (4-day grace) ─────────────────────────────────────
+    if (birthDate && doseInfo.minAgeMonths > 0) {
+      const minAgeMs = Math.round(doseInfo.minAgeMonths * 30.44) - GRACE_DAYS;
+      const minAgeDate = addDays(birthDate, minAgeMs);
+      if (given < minAgeDate) continue; // invalid — skip, leave slot open
+    }
+
+    // ── Minimum interval from last valid dose (4-day grace) ──────────────────
+    if (lastDate && doseInfo.minIntervalFromPrevDays) {
+      const minInt = doseInfo.minIntervalFromPrevDays - GRACE_DAYS;
+      if (given < addDays(lastDate, minInt)) continue; // invalid
+    }
+
+    // ── HepB dose 3: also ≥16 weeks from dose 1 (4-day grace) ───────────────
+    if (shortName === "HepB" && doseNum === 3 && firstDate && doseInfo.minFromDose1Days) {
+      const minFromD1 = doseInfo.minFromDose1Days - GRACE_DAYS;
+      if (given < addDays(firstDate, minFromD1)) continue; // invalid
+    }
+
+    // ── Dose is valid ────────────────────────────────────────────────────────
+    validCount++;
+    if (!firstDate) firstDate = given;
+    lastDate = given;
+  }
+
+  return { validCount, firstDate, lastDate, skipDose5 };
 }
 
 const GRADE_AGE_LABEL: Record<GradeLevel, string> = {
@@ -168,7 +258,8 @@ export function generateStandardSchedule(
   stateName: string,
   birthDate: Date,
   stateRequirements: StateVaccineRequirement[],
-  vaccineSet: VaccineSet = "school"
+  vaccineSet: VaccineSet = "school",
+  priorHistory: PriorDoseHistory = {}
 ): GeneratedSchedule {
   const rng = seededRng(birthDate.getTime() % 999983);
   const startYear = birthDate.getFullYear();
@@ -193,7 +284,18 @@ export function generateStandardSchedule(
     const dosesToSchedule = Math.min(req.totalDoses, cdcInfo.doses.length);
     const slotMap = DOSE_TO_SLOT[req.shortName] ?? {};
 
-    for (let i = 0; i < dosesToSchedule; i++) {
+    // ── Prior dose handling ────────────────────────────────────────────────
+    const priorDates = priorHistory[req.shortName];
+    let startDoseIndex = 0;
+    if (priorDates && Object.keys(priorDates).length > 0) {
+      const ev = evaluatePriorDoses(req.shortName, priorDates, birthDate, cdcInfo.doses);
+      if (ev.firstDate) firstDoseDate[req.shortName] = ev.firstDate;
+      if (ev.lastDate)  lastDoseDate[req.shortName]  = ev.lastDate;
+      startDoseIndex = ev.skipDose5 ? dosesToSchedule : ev.validCount;
+      if (startDoseIndex >= dosesToSchedule) continue; // all doses already done
+    }
+
+    for (let i = startDoseIndex; i < dosesToSchedule; i++) {
       const doseInfo = cdcInfo.doses[i];
       const doseNum = doseInfo.doseNumber;
       const slotKey = slotMap[doseNum];
@@ -284,7 +386,9 @@ export function generateCatchUpSchedule(
   startDate: Date,
   entryGrade: GradeLevel,
   stateRequirements: StateVaccineRequirement[],
-  vaccineSet: VaccineSet = "school"
+  vaccineSet: VaccineSet = "school",
+  priorHistory: PriorDoseHistory = {},
+  birthDate?: Date
 ): GeneratedSchedule {
   const rng = seededRng(startDate.getTime() % 999983);
   const startYear = startDate.getFullYear();
@@ -328,6 +432,46 @@ export function generateCatchUpSchedule(
 
   const lastDoseDate: Record<string, Date> = {};
   const firstDoseDate: Record<string, Date> = {};
+
+  // ── Seed tracking records from prior doses ─────────────────────────────────
+  // Estimate birth date from grade if not provided (for DTaP dose 5 check)
+  const effectiveBirthDate: Date | null = birthDate ?? (() => {
+    const gradeAgeYears: Record<GradeLevel, number> = {
+      PK: 4, K: 5, "1": 6, "2": 7, "3": 8, "4": 9, "5": 10,
+      "6": 11, "7": 12, "8": 13, "9": 14, "10": 15, "11": 16, "12": 17,
+    };
+    const est = new Date(startDate);
+    est.setFullYear(est.getFullYear() - (gradeAgeYears[entryGrade] ?? 5));
+    return est;
+  })();
+
+  const priorEvals: Record<string, PriorEval> = {};
+  for (const req of stateRequirements) {
+    const cdcInfo = CDC_SCHEDULE[req.shortName];
+    if (!cdcInfo) continue;
+    const priorDates = priorHistory[req.shortName];
+    if (!priorDates || Object.keys(priorDates).length === 0) continue;
+
+    const ev = evaluatePriorDoses(req.shortName, priorDates, effectiveBirthDate, cdcInfo.doses);
+    priorEvals[req.shortName] = ev;
+    if (ev.firstDate) firstDoseDate[req.shortName] = ev.firstDate;
+    if (ev.lastDate)  lastDoseDate[req.shortName]  = ev.lastDate;
+  }
+
+  // Re-build pending list using evaluated prior doses (remove already-given doses)
+  const adjustedPending: typeof pending = [];
+  for (const item of pending) {
+    const ev = priorEvals[item.req.shortName];
+    if (!ev) { adjustedPending.push(item); continue; }
+    if (ev.skipDose5 && item.req.shortName === "DTaP" &&
+        item.req.shortName === "DTaP" &&
+        CDC_SCHEDULE["DTaP"]!.doses[item.doseIndex]?.doseNumber === 5) continue;
+    if (item.doseIndex < ev.validCount) continue; // this dose already given
+    adjustedPending.push(item);
+  }
+  pending.length = 0;
+  pending.push(...adjustedPending);
+
   const allDoses: ScheduledDose[] = [];
   const effectiveStart = nextValidDate(startDate, skipDates);
 

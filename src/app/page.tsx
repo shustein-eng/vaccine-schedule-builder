@@ -37,14 +37,15 @@ export default function HomePage() {
 
         <p className="text-xl md:text-2xl text-blue-100 max-w-3xl mb-4 leading-relaxed">
           Generate a personalized vaccine schedule your patients can actually follow —
-          with real appointment dates, no weekends, no holidays.
+          built around their existing records, with real appointment dates, no weekends, no holidays.
         </p>
 
         <p className="text-blue-200 max-w-2xl mb-12 leading-relaxed">
-          Choose between the <strong className="text-white">full CDC-recommended schedule</strong> or
-          only the <strong className="text-white">vaccines mandated for school entry</strong> in your
-          state. Parents leave the office knowing <em>exactly</em> when to bring
-          their child in — down to the specific date.
+          Enter the child&apos;s prior vaccination history and the schedule picks up exactly
+          where they left off — applying strict CDC interval rules with the 4-day grace period.
+          Choose between the <strong className="text-white">full CDC-recommended schedule</strong>,
+          only the <strong className="text-white">vaccines mandated for school entry</strong>,
+          or add optional vaccines like HPV, Flu, and COVID-19 individually.
         </p>
 
         <Link
@@ -60,11 +61,11 @@ export default function HomePage() {
             icon={
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
               </svg>
             }
-            title="All 50 States + Full CDC"
-            body="Choose between each state's school-entry mandates or the complete CDC-recommended childhood & adolescent schedule — your call."
+            title="Prior Records Built In"
+            body="Enter doses already received and the schedule picks up from there — enforcing CDC minimums and the 4-day grace period, with automatic DTaP dose 5 waiver logic."
           />
           <FeatureCard
             icon={
@@ -83,8 +84,8 @@ export default function HomePage() {
                   d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             }
-            title="Catch-Up Schedules"
-            body="For children starting vaccines later — 6th grade, 9th grade, or any point — the catch-up CDC schedule is applied automatically."
+            title="All 50 States + Catch-Up"
+            body="State school mandates or the full CDC schedule, for birth or any grade entry. Controversial vaccines (HPV, Flu, COVID) are individually opt-in."
           />
         </div>
       </main>
