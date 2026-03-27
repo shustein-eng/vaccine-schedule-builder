@@ -795,16 +795,11 @@ export const ALL_CDC_VACCINES: StateVaccineRequirement[] = [
     entryGrades: ["7"],
     notes: "Dose 1 at age 11–12; booster dose at age 16",
   },
-  {
-    vaccine: "Human Papillomavirus (HPV)",
-    shortName: "HPV",
-    totalDoses: 2,
-    entryGrades: ["7"],
-    notes: "2-dose series starting at age 11–12; 3 doses if started at age 15+",
-  },
 ];
 
 // Individually selectable vaccines that are not universally mandated or are more contested
+// NOTE: HPV, Flu, and COVID are intentionally excluded from ALL_CDC_VACCINES — they only
+// appear in the schedule when the user explicitly checks their individual checkbox below.
 export const OPTIONAL_VACCINES: StateVaccineRequirement[] = [
   {
     vaccine: "Human Papillomavirus (HPV)",
