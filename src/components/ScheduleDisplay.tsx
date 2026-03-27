@@ -106,6 +106,14 @@ export default function ScheduleDisplay({
               <p className="text-gray-500 mt-1">
                 {schedule.stateName} — {isBirth ? "Standard CDC Schedule (Birth)" : `Entry at Grade ${schedule.entryGrade}`}
               </p>
+              {schedule.birthDate && (
+                <p className="text-gray-600 mt-1 font-medium">
+                  Date of Birth:{" "}
+                  {new Date(schedule.birthDate).toLocaleDateString("en-US", {
+                    year: "numeric", month: "long", day: "numeric",
+                  })}
+                </p>
+              )}
             </div>
             <div className="flex gap-4 text-center">
               <StatBadge value={schedule.totalAppointments} label="Appointments" color="blue" />
