@@ -4,18 +4,12 @@
   "description": "Vaccine schedule builder for physician counseling",
   "author": "Vaccine Schedule Builder",
   "private": true,
-  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev -p 3003",
     "build": "next build",
     "start": "next start -p 3003",
     "lint": "next lint",
-    "electron:dev": "electron .",
-    "electron:build": "node electron/build.js",
-    "electron:build-win": "node electron/build.js --win",
-    "electron:build-mac": "node electron/build.js --mac",
-    "tauri:build": "NEXT_BUILD_DESKTOP=1 next build && tauri build",
-    "tauri:build-win": "cross-env NEXT_BUILD_DESKTOP=1 next build && tauri build"
+    "desktop:build": "cross-env NEXT_BUILD_DESKTOP=1 next build && npx tauri build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",
@@ -31,8 +25,6 @@
     "@types/react-dom": "^18",
     "autoprefixer": "^10.0.1",
     "cross-env": "^7.0.3",
-    "electron": "^33.4.0",
-    "electron-builder": "^25.1.8",
     "eslint": "^8",
     "eslint-config-next": "14.2.29",
     "postcss": "^8",
