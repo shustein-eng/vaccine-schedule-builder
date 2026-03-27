@@ -137,12 +137,16 @@ const DOSE_TO_SLOT: Record<string, Record<number, string>> = {
   "MenACWY-Booster": { 1: "16yr"                                             },
   Tdap:              { 1: "11yr"                                              },
   HPV:               { 1: "11yr",  2: "relative"                             },
+  Flu:               { 1: "6mo",   2: "relative"                             },
+  COVID:             { 1: "6mo",   2: "relative"                             },
 };
 
 // Minimum interval (days) from the previous dose for "relative" slot doses
 const RELATIVE_MIN_DAYS: Record<string, number> = {
-  HepA: 182,  // 6 months
-  HPV:  154,  // 5 months (2-dose series)
+  HepA:  182,  // 6 months
+  HPV:   154,  // 5 months (2-dose series)
+  Flu:    28,  // 4 weeks
+  COVID:  28,  // 4 weeks
 };
 
 // Upper age limit (days) at which we stop scheduling a vaccine in catch-up

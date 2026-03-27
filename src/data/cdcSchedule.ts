@@ -391,5 +391,57 @@ export const CDC_SCHEDULE: Record<string, VaccineSchedule> = {
   },
 };
 
+  Flu: {
+    shortName: "Flu",
+    fullName: "Influenza",
+    notes: "Annual vaccination recommended; 2 doses 4 weeks apart for first-time recipients under age 9",
+    doses: [
+      {
+        doseNumber: 1,
+        recommendedAgeMonths: 6,
+        minAgeMonths: 6,
+        label: "Flu Dose 1",
+        catchUpMinAgeDays: M(6),
+        notes: "Annual flu vaccine; 2 doses for first-time recipients under age 9",
+      },
+      {
+        doseNumber: 2,
+        recommendedAgeMonths: 7,
+        minAgeMonths: 6,
+        maxAgeMonths: 108, // second dose only for children under 9 (first-time recipients)
+        minIntervalFromPrevDays: 28,
+        catchUpMinIntervalFromPrevDays: 28,
+        label: "Flu Dose 2",
+        notes: "Second dose only for children under age 9 receiving flu vaccine for the first time",
+      },
+    ],
+  },
+
+  COVID: {
+    shortName: "COVID",
+    fullName: "COVID-19",
+    notes: "Annual updated COVID-19 vaccine recommended; shown here as initial 2-dose primary series",
+    doses: [
+      {
+        doseNumber: 1,
+        recommendedAgeMonths: 6,
+        minAgeMonths: 6,
+        label: "COVID-19 Dose 1",
+        catchUpMinAgeDays: M(6),
+        notes: "Primary series; consult current CDC guidance for updated vaccine formulation",
+      },
+      {
+        doseNumber: 2,
+        recommendedAgeMonths: 7,
+        minAgeMonths: 6,
+        minIntervalFromPrevDays: 28,
+        catchUpMinIntervalFromPrevDays: 28,
+        label: "COVID-19 Dose 2",
+        notes: "Annual updated dose recommended thereafter",
+      },
+    ],
+  },
+};
+
 // Unused export kept for API compatibility — no longer used in scheduler
 export const CATCH_UP_DOSE_MAP: Record<string, Record<string, number>> = {};

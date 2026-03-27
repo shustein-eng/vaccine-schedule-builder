@@ -51,6 +51,8 @@ const VACCINE_COLORS: Record<string, string> = {
   MenACWY:           "bg-cyan-200 text-cyan-900 border-cyan-400",
   "MenACWY-Booster": "bg-teal-200 text-teal-900 border-teal-400",
   HPV:               "bg-rose-200 text-rose-900 border-rose-400",
+  Flu:               "bg-sky-200 text-sky-900 border-sky-400",
+  COVID:             "bg-slate-200 text-slate-900 border-slate-400",
 };
 
 function vaccineColor(shortName: string): string {

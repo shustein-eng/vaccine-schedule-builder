@@ -804,6 +804,31 @@ export const ALL_CDC_VACCINES: StateVaccineRequirement[] = [
   },
 ];
 
+// Individually selectable vaccines that are not universally mandated or are more contested
+export const OPTIONAL_VACCINES: StateVaccineRequirement[] = [
+  {
+    vaccine: "Human Papillomavirus (HPV)",
+    shortName: "HPV",
+    totalDoses: 2,
+    entryGrades: ["7"],
+    notes: "2-dose series starting at age 11–12; 3 doses if started at age 15+",
+  },
+  {
+    vaccine: "Influenza (Flu)",
+    shortName: "Flu",
+    totalDoses: 2,
+    entryGrades: ["K"],
+    notes: "Annual vaccination recommended; 2 doses for first-time recipients under age 9",
+  },
+  {
+    vaccine: "COVID-19",
+    shortName: "COVID",
+    totalDoses: 2,
+    entryGrades: ["K"],
+    notes: "2-dose primary series; annual updated dose recommended thereafter",
+  },
+];
+
 // Filter CDC vaccines relevant for a given catch-up entry grade
 export function getAllCDCVaccinesForGrade(entryGrade: GradeLevel): StateVaccineRequirement[] {
   const gradeOrder: GradeLevel[] = ["PK", "K", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];

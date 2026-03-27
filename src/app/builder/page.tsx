@@ -4,8 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import ScheduleDisplay from "@/components/ScheduleDisplay";
 import { generateStandardSchedule, generateCatchUpSchedule } from "@/lib/scheduleGenerator";
-import { getVaccinesForGrade, getAllCDCVaccinesForGrade, ALL_CDC_VACCINES, STATE_VACCINE_DATA } from "@/data/stateVaccines";
-import type { GradeLevel, VaccineSet } from "@/data/stateVaccines";
+import { getVaccinesForGrade, getAllCDCVaccinesForGrade, ALL_CDC_VACCINES, OPTIONAL_VACCINES, STATE_VACCINE_DATA } from "@/data/stateVaccines";
+import type { GradeLevel, VaccineSet, StateVaccineRequirement } from "@/data/stateVaccines";
 
 const GRADES: { value: GradeLevel; label: string }[] = [
   { value: "PK", label: "Pre-K (age ~4)" },
@@ -76,6 +76,7 @@ export default function BuilderPage() {
   const [stateCode, setStateCode] = useState("");
   const [mode, setMode] = useState<Mode>("birth");
   const [vaccineSet, setVaccineSet] = useState<VaccineSet>("school");
+  const [selectedOptional, setSelectedOptional] = useState<Set<string>>(new Set());
   const [birthDate, setBirthDate] = useState("");
   const [startDate, setStartDate] = useState("");
   const [entryGrade, setEntryGrade] = useState<GradeLevel>("K");
@@ -100,16 +101,34 @@ export default function BuilderPage() {
       if (!stateData) throw new Error("Invalid state");
 
       // ── Generate schedule entirely in the browser — no API call needed ──
+      // Merge base vaccines with any individually selected optional vaccines (dedup by shortName)
+      function mergeWithOptional(base: StateVaccineRequirement[], gradeFilter?: GradeLevel): StateVaccineRequirement[] {
+        const existing = new Set(base.map((v) => v.shortName));
+        const extras = OPTIONAL_VACCINES.filter((v) => {
+          if (!selectedOptional.has(v.shortName)) return false;
+          if (existing.has(v.shortName)) return false; // already included
+          if (gradeFilter) {
+            const gradeOrder: GradeLevel[] = ["PK","K","1","2","3","4","5","6","7","8","9","10","11","12"];
+            const entryIdx = gradeOrder.indexOf(gradeFilter);
+            return v.entryGrades.some((g) => gradeOrder.indexOf(g) <= entryIdx);
+          }
+          return true;
+        });
+        return [...base, ...extras];
+      }
+
       let schedule;
       if (mode === "birth") {
-        const vaccines = vaccineSet === "cdc" ? ALL_CDC_VACCINES : stateData.requirements;
+        const base = vaccineSet === "cdc" ? ALL_CDC_VACCINES : stateData.requirements;
+        const vaccines = mergeWithOptional(base);
         schedule = generateStandardSchedule(
           stateCode, stateData.name, new Date(birthDate), vaccines, vaccineSet
         );
       } else {
-        const vaccines = vaccineSet === "cdc"
+        const base = vaccineSet === "cdc"
           ? getAllCDCVaccinesForGrade(entryGrade)
           : getVaccinesForGrade(stateCode, entryGrade);
+        const vaccines = mergeWithOptional(base, entryGrade);
         schedule = generateCatchUpSchedule(
           stateCode, stateData.name, new Date(startDate), entryGrade, vaccines, vaccineSet
         );
@@ -214,6 +233,46 @@ export default function BuilderPage() {
             </div>
           </div>
 
+          {/* Optional / Additional Vaccines */}
+          <div className="border-b border-gray-200 p-6">
+            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Additional Optional Vaccines</p>
+            <p className="text-xs text-gray-400 mb-4">These vaccines are sometimes controversial or not universally mandated. Check any you&apos;d like to include in the schedule.</p>
+            <div className="space-y-3">
+              {OPTIONAL_VACCINES.map((v) => {
+                const checked = selectedOptional.has(v.shortName);
+                return (
+                  <label
+                    key={v.shortName}
+                    className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                      checked ? "border-blue-400 bg-blue-50" : "border-gray-200 hover:border-gray-300 bg-white"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => {
+                        setSelectedOptional((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(v.shortName)) next.delete(v.shortName);
+                          else next.add(v.shortName);
+                          return next;
+                        });
+                        setResult(null);
+                      }}
+                      className="mt-0.5 w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer"
+                    />
+                    <div>
+                      <p className={`font-semibold text-sm ${checked ? "text-blue-800" : "text-gray-700"}`}>
+                        {v.vaccine}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">{v.notes}</p>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {/* State */}
             <div>
@@ -222,7 +281,11 @@ export default function BuilderPage() {
                 <option value="">— Select a state —</option>
                 {US_STATES.map((s) => <option key={s.code} value={s.code}>{s.name}</option>)}
               </select>
-              <p className="text-xs text-gray-400 mt-1">Only vaccines required for school entry in this state will be scheduled.</p>
+              <p className="text-xs text-gray-400 mt-1">
+                {vaccineSet === "cdc"
+                  ? "All CDC-recommended vaccines will be scheduled regardless of state mandates."
+                  : "Only vaccines required for school entry in this state will be scheduled."}
+              </p>
             </div>
 
             {mode === "birth" ? (
