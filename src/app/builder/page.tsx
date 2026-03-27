@@ -451,7 +451,7 @@ export default function BuilderPage() {
                 <div>
                   <label className="label">Start Date for Schedule</label>
                   <input type="date" className="input" value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)} min={today} required />
+                    onChange={(e) => setStartDate(e.target.value)} required />
                   <p className="text-xs text-gray-400 mt-1">Date of the first appointment; subsequent doses follow CDC catch-up intervals.</p>
                 </div>
               </>
