@@ -34,8 +34,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# desktop (Electron) — not pushed to git
+# desktop (Electron + Tauri) — not pushed to git
 /electron/
+/src-tauri/
 /dist/
 *.exe
 *.dmg

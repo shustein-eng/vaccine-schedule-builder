@@ -13,7 +13,9 @@
     "electron:dev": "electron .",
     "electron:build": "node electron/build.js",
     "electron:build-win": "node electron/build.js --win",
-    "electron:build-mac": "node electron/build.js --mac"
+    "electron:build-mac": "node electron/build.js --mac",
+    "tauri:build": "NEXT_BUILD_DESKTOP=1 next build && tauri build",
+    "tauri:build-win": "cross-env NEXT_BUILD_DESKTOP=1 next build && tauri build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",
@@ -23,13 +25,14 @@
     "react-dom": "^18"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.0.1",
+    "cross-env": "^7.0.3",
     "electron": "^33.4.0",
     "electron-builder": "^25.1.8",
-    "electron-serve": "^3.0.1",
     "eslint": "^8",
     "eslint-config-next": "14.2.29",
     "postcss": "^8",
