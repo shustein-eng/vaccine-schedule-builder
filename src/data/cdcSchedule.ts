@@ -42,8 +42,8 @@ export const CDC_SCHEDULE: Record<string, VaccineSchedule> = {
       },
       {
         doseNumber: 2,
-        recommendedAgeMonths: 1,   // 1-2 months
-        minAgeMonths: 1,
+        recommendedAgeMonths: 2,   // given at 2-month well-child visit with DTaP/IPV/etc.
+        minAgeMonths: 1,           // CDC minimum is 4 weeks after dose 1
         minIntervalFromPrevDays: 28,
         catchUpMinIntervalFromPrevDays: 28,
         label: "HepB Dose 2",
