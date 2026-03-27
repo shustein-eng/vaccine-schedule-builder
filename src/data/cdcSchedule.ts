@@ -389,7 +389,6 @@ export const CDC_SCHEDULE: Record<string, VaccineSchedule> = {
       },
     ],
   },
-};
 
   Flu: {
     shortName: "Flu",
