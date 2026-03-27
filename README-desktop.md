@@ -44,10 +44,9 @@ npm run electron:build
 
 ## What the Build Does
 
-1. Builds Next.js in **standalone mode** — a self-contained Node.js server with minimal dependencies
-2. Copies static assets and public files into the standalone bundle
-3. Copies `.env.local` (with your API key) into the bundle so AI summaries work offline
-4. Packages everything with Electron into a native installer
+1. Builds Next.js as a **static export** — pure HTML/CSS/JS files in the `out/` folder, no server needed
+2. Packages `out/` and the Electron shell together with electron-builder into a native installer
+3. The installed app opens directly from bundled files — no browser, no server, no internet required
 
 ---
 
@@ -56,12 +55,14 @@ npm run electron:build
 To test the desktop app before packaging:
 
 ```bash
-# First start the Next.js dev server
-npm run dev
+# First build the static export
+npm run build   # run once after code changes
 
-# In a second terminal, open the Electron window
+# Then open the Electron window
 npm run electron:dev
 ```
+
+> Note: `npm run dev` starts the dev server for browser testing. For the desktop preview, you need the static build in `out/` first.
 
 ---
 
@@ -99,6 +100,6 @@ Share the installer file from the `dist/` folder. Recipients just run the instal
 
 ## Notes
 
-- The `electron/` directory and `dist/` output are excluded from git (`.gitignore`)
+- The `electron/` directory, `out/`, and `dist/` output are excluded from git (`.gitignore`)
 - To rebuild after code changes: run `npm run electron:build` again
-- The installed app runs a local server on port 3003; it does not expose anything to the network
+- The desktop app loads files directly — no local server, no network ports used
