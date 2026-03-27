@@ -2,11 +2,16 @@
   "name": "vaccine-schedule-builder",
   "version": "1.0.0",
   "private": true,
+  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev -p 3003",
     "build": "next build",
     "start": "next start -p 3003",
-    "lint": "next lint"
+    "lint": "next lint",
+    "electron:dev": "electron .",
+    "electron:build": "node electron/build.js",
+    "electron:build-win": "node electron/build.js --win",
+    "electron:build-mac": "node electron/build.js --mac"
   },
   "dependencies": {
     "next": "14.2.29",
@@ -24,6 +29,8 @@
     "postcss": "^8",
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
-    "eslint-config-next": "14.2.29"
+    "eslint-config-next": "14.2.29",
+    "electron": "^33.4.0",
+    "electron-builder": "^25.1.8"
   }
 }

@@ -32,3 +32,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# desktop (Electron) — not pushed to git
+/electron/
+/dist/
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.rpm
