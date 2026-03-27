@@ -5,16 +5,14 @@
 
 export interface VaccineDoseInfo {
   doseNumber: number;
-  // Standard schedule (from birth)
-  recommendedAgeMonths: number;  // recommended starting age in months
-  minAgeMonths: number;          // minimum age to give this dose (months)
-  maxAgeMonths?: number;         // upper age limit for this dose
-  // Interval from previous dose in same series (days)
-  minIntervalFromPrevDays?: number;
-  // Catch-up schedule minimums
-  catchUpMinIntervalFromPrevDays?: number;
+  recommendedAgeMonths: number;  // recommended starting age (months from birth)
+  minAgeMonths: number;          // minimum age (months from birth)
+  maxAgeMonths?: number;         // upper age limit — dose is NOT given after this age
+  minIntervalFromPrevDays?: number;      // min interval from previous dose in series (standard)
+  minFromDose1Days?: number;             // additional constraint: min days from DOSE 1 (HepB rule)
+  catchUpMinIntervalFromPrevDays?: number; // catch-up minimum interval from previous dose
   catchUpMinAgeDays?: number;
-  label: string; // e.g., "DTaP Dose 1"
+  label: string;
   notes?: string;
 }
 
@@ -25,7 +23,6 @@ export interface VaccineSchedule {
   notes?: string;
 }
 
-// Days per month approximation
 const M = (months: number) => Math.round(months * 30.44);
 
 export const CDC_SCHEDULE: Record<string, VaccineSchedule> = {
@@ -35,27 +32,28 @@ export const CDC_SCHEDULE: Record<string, VaccineSchedule> = {
     doses: [
       {
         doseNumber: 1,
-        recommendedAgeMonths: 0,   // birth
+        recommendedAgeMonths: 0,
         minAgeMonths: 0,
         label: "HepB Dose 1",
         catchUpMinAgeDays: 0,
       },
       {
         doseNumber: 2,
-        recommendedAgeMonths: 2,   // given at 2-month well-child visit with DTaP/IPV/etc.
-        minAgeMonths: 1,           // CDC minimum is 4 weeks after dose 1
+        recommendedAgeMonths: 2,   // given at 2-month well-child visit
+        minAgeMonths: 1,           // CDC minimum age: 4 weeks after dose 1
         minIntervalFromPrevDays: 28,
         catchUpMinIntervalFromPrevDays: 28,
         label: "HepB Dose 2",
       },
       {
         doseNumber: 3,
-        recommendedAgeMonths: 6,   // 6-18 months
+        recommendedAgeMonths: 6,
         minAgeMonths: 6,
-        minIntervalFromPrevDays: 56,   // at least 8 weeks after dose 2
-        catchUpMinIntervalFromPrevDays: 56,
+        minIntervalFromPrevDays: 56,        // ≥8 weeks after dose 2
+        minFromDose1Days: 112,              // ≥16 weeks after dose 1 (CDC requirement)
+        catchUpMinIntervalFromPrevDays: 56, // ≥8 weeks after dose 2
         label: "HepB Dose 3",
-        notes: "Must be at least 16 weeks after dose 1 and at least 8 weeks after dose 2",
+        notes: "Must be ≥16 weeks after dose 1 AND ≥8 weeks after dose 2",
       },
     ],
   },
@@ -89,22 +87,22 @@ export const CDC_SCHEDULE: Record<string, VaccineSchedule> = {
       },
       {
         doseNumber: 4,
-        recommendedAgeMonths: 15,  // 15-18 months
+        recommendedAgeMonths: 15,
         minAgeMonths: 12,
-        minIntervalFromPrevDays: 182,  // 6 months after dose 3
+        minIntervalFromPrevDays: 182,  // ≥6 months after dose 3
         catchUpMinIntervalFromPrevDays: 182,
         label: "DTaP Dose 4",
         notes: "At least 6 months after dose 3",
       },
       {
         doseNumber: 5,
-        recommendedAgeMonths: 48,  // 4-6 years
+        recommendedAgeMonths: 48,  // 4–6 years
         minAgeMonths: 48,
-        maxAgeMonths: 84,
+        maxAgeMonths: 84,          // NOT given after age 7
         minIntervalFromPrevDays: 182,
         catchUpMinIntervalFromPrevDays: 182,
         label: "DTaP Dose 5",
-        notes: "Not needed if dose 4 was given on or after 4th birthday",
+        notes: "Not needed if dose 4 given on or after 4th birthday; not given after age 7",
       },
     ],
   },
@@ -115,11 +113,11 @@ export const CDC_SCHEDULE: Record<string, VaccineSchedule> = {
     doses: [
       {
         doseNumber: 1,
-        recommendedAgeMonths: 132,  // 11-12 years
-        minAgeMonths: 84,  // 7 years minimum catch-up
+        recommendedAgeMonths: 132,  // 11–12 years
+        minAgeMonths: 84,           // 7 years minimum for catch-up
         label: "Tdap Booster",
         catchUpMinAgeDays: M(84),
-        notes: "One-time booster; replaces one Td dose",
+        notes: "One-time booster; replaces one Td dose in the catch-up series",
       },
     ],
   },
@@ -150,13 +148,12 @@ export const CDC_SCHEDULE: Record<string, VaccineSchedule> = {
         minIntervalFromPrevDays: 28,
         catchUpMinIntervalFromPrevDays: 28,
         label: "IPV Dose 3",
-        notes: "If doses 1 & 2 are Pediarix or Pentacel; otherwise can be given at 6-18 months",
       },
       {
         doseNumber: 4,
-        recommendedAgeMonths: 48,  // 4-6 years
+        recommendedAgeMonths: 48,  // 4–6 years
         minAgeMonths: 48,
-        maxAgeMonths: 216,  // 18 years
+        maxAgeMonths: 216,         // up to age 18
         minIntervalFromPrevDays: 182,
         catchUpMinIntervalFromPrevDays: 182,
         label: "IPV Dose 4",
@@ -168,6 +165,7 @@ export const CDC_SCHEDULE: Record<string, VaccineSchedule> = {
   Hib: {
     shortName: "Hib",
     fullName: "Haemophilus influenzae type b",
+    notes: "Not routinely recommended after age 59 months",
     doses: [
       {
         doseNumber: 1,
@@ -194,20 +192,19 @@ export const CDC_SCHEDULE: Record<string, VaccineSchedule> = {
         minIntervalFromPrevDays: 28,
         catchUpMinIntervalFromPrevDays: 28,
         label: "Hib Dose 3",
-        notes: "Only required for some brands; not required for PRP-OMP (PedvaxHIB)",
+        notes: "Not required for PRP-OMP brand (PedvaxHIB)",
       },
       {
         doseNumber: 4,
-        recommendedAgeMonths: 12,  // 12-15 months
+        recommendedAgeMonths: 12,
         minAgeMonths: 12,
         maxAgeMonths: 59,
         minIntervalFromPrevDays: 56,
         catchUpMinIntervalFromPrevDays: 56,
         label: "Hib Booster",
-        notes: "Booster dose; must be given between 12-59 months",
+        notes: "Booster dose; must be given between 12–59 months",
       },
     ],
-    notes: "Not routinely recommended after age 5; catch-up only for age 5-59 months",
   },
 
   PCV: {
@@ -242,7 +239,7 @@ export const CDC_SCHEDULE: Record<string, VaccineSchedule> = {
       },
       {
         doseNumber: 4,
-        recommendedAgeMonths: 12,  // 12-15 months
+        recommendedAgeMonths: 12,
         minAgeMonths: 12,
         maxAgeMonths: 71,
         minIntervalFromPrevDays: 56,
@@ -258,15 +255,15 @@ export const CDC_SCHEDULE: Record<string, VaccineSchedule> = {
     doses: [
       {
         doseNumber: 1,
-        recommendedAgeMonths: 12,  // 12-15 months
+        recommendedAgeMonths: 12,
         minAgeMonths: 12,
         label: "MMR Dose 1",
         catchUpMinAgeDays: M(12),
       },
       {
         doseNumber: 2,
-        recommendedAgeMonths: 48,  // 4-6 years
-        minAgeMonths: 13,  // min 4 weeks after dose 1
+        recommendedAgeMonths: 48,
+        minAgeMonths: 13,
         minIntervalFromPrevDays: 28,
         catchUpMinIntervalFromPrevDays: 28,
         label: "MMR Dose 2",
@@ -281,19 +278,21 @@ export const CDC_SCHEDULE: Record<string, VaccineSchedule> = {
     doses: [
       {
         doseNumber: 1,
-        recommendedAgeMonths: 12,  // 12-15 months
+        recommendedAgeMonths: 12,
         minAgeMonths: 12,
         label: "Varicella Dose 1",
         catchUpMinAgeDays: M(12),
       },
       {
         doseNumber: 2,
-        recommendedAgeMonths: 48,  // 4-6 years
-        minAgeMonths: 15,  // min 3 months after dose 1
-        minIntervalFromPrevDays: 90,  // 3 months minimum
-        catchUpMinIntervalFromPrevDays: 28,  // catch-up: 28 days if ≥13 years
+        recommendedAgeMonths: 48,
+        minAgeMonths: 15,
+        minIntervalFromPrevDays: 90,   // 3 months for standard schedule
+        // Catch-up: 3 months for <13 years; 4 weeks for ≥13 years.
+        // We use 90 days (conservative/correct for most school-age patients).
+        catchUpMinIntervalFromPrevDays: 90,
         label: "Varicella Dose 2",
-        notes: "Min 3 months after dose 1 (if under 13 years); 28 days if 13+ years",
+        notes: "Min 3 months after dose 1 if under 13 years; 4 weeks if 13+",
       },
     ],
   },
@@ -304,7 +303,7 @@ export const CDC_SCHEDULE: Record<string, VaccineSchedule> = {
     doses: [
       {
         doseNumber: 1,
-        recommendedAgeMonths: 12,  // 12-23 months
+        recommendedAgeMonths: 12,
         minAgeMonths: 12,
         label: "HepA Dose 1",
         catchUpMinAgeDays: M(12),
@@ -312,9 +311,9 @@ export const CDC_SCHEDULE: Record<string, VaccineSchedule> = {
       },
       {
         doseNumber: 2,
-        recommendedAgeMonths: 18,  // 6-18 months after dose 1
+        recommendedAgeMonths: 18,
         minAgeMonths: 18,
-        minIntervalFromPrevDays: 182,  // 6 months minimum
+        minIntervalFromPrevDays: 182,  // ≥6 months
         catchUpMinIntervalFromPrevDays: 182,
         label: "HepA Dose 2",
         notes: "At least 6 months after dose 1",
@@ -328,20 +327,38 @@ export const CDC_SCHEDULE: Record<string, VaccineSchedule> = {
     doses: [
       {
         doseNumber: 1,
-        recommendedAgeMonths: 132,  // 11-12 years
-        minAgeMonths: 24,  // catch-up from age 2 in certain high-risk
+        recommendedAgeMonths: 132,  // 11–12 years
+        minAgeMonths: 24,
         label: "MenACWY Dose 1",
         catchUpMinAgeDays: M(24),
-        notes: "Routine dose at 11-12 years",
+        notes: "Routine dose at 11–12 years",
       },
       {
         doseNumber: 2,
         recommendedAgeMonths: 192,  // 16 years booster
         minAgeMonths: 132,
-        minIntervalFromPrevDays: 56,  // at least 8 weeks after dose 1 for catch-up
+        minIntervalFromPrevDays: 56,
         catchUpMinIntervalFromPrevDays: 56,
         label: "MenACWY Booster",
-        notes: "Booster at age 16 (required by some states)",
+        notes: "Booster at age 16 (required by some states); ≥8 weeks after dose 1",
+      },
+    ],
+  },
+
+  // Separate entry for states that list the booster as a distinct requirement.
+  // The scheduler enforces the prerequisite interval via VACCINE_PREREQUISITE map.
+  "MenACWY-Booster": {
+    shortName: "MenACWY-Booster",
+    fullName: "Meningococcal ACWY Booster (2nd dose)",
+    doses: [
+      {
+        doseNumber: 1,
+        recommendedAgeMonths: 192,  // 16 years
+        minAgeMonths: 132,
+        minIntervalFromPrevDays: 56, // ≥8 weeks after first MenACWY dose
+        catchUpMinIntervalFromPrevDays: 56,
+        label: "MenACWY Booster Dose",
+        notes: "2nd MenACWY dose; ≥8 weeks after first MenACWY dose",
       },
     ],
   },
@@ -349,84 +366,30 @@ export const CDC_SCHEDULE: Record<string, VaccineSchedule> = {
   HPV: {
     shortName: "HPV",
     fullName: "Human Papillomavirus",
+    notes: "2-dose series if started before 15th birthday; 3-dose if started at/after 15",
     doses: [
       {
         doseNumber: 1,
-        recommendedAgeMonths: 132,  // 11-12 years
-        minAgeMonths: 108,  // 9 years minimum
+        recommendedAgeMonths: 132,  // 11–12 years
+        minAgeMonths: 108,          // 9 years minimum
         label: "HPV Dose 1",
         catchUpMinAgeDays: M(108),
       },
       {
         doseNumber: 2,
-        recommendedAgeMonths: 138,  // 6-12 months after dose 1 if started before 15
+        recommendedAgeMonths: 138,  // ~6 months after dose 1
         minAgeMonths: 108,
-        minIntervalFromPrevDays: 154,  // 5 months if 2-dose series
-        catchUpMinIntervalFromPrevDays: 28,  // 4 weeks minimum catch-up
+        minIntervalFromPrevDays: 154,  // 5 months (2-dose series)
+        // Catch-up for 2-dose series (< age 15): 5 months minimum.
+        // For ≥ age 15 (3-dose series), dose 2 is 4 weeks; but we use 154 as the
+        // safe default since most users of this app are school-age children <15.
+        catchUpMinIntervalFromPrevDays: 154,
         label: "HPV Dose 2",
-        notes: "2-dose series if started before age 15; 3-dose if started at 15+",
+        notes: "2-dose series: ≥5 months after dose 1 (if started before age 15)",
       },
     ],
-    notes: "2-dose series if started before 15th birthday; 3-dose if started at/after 15",
   },
 };
 
-// Dose counts by grade level for catch-up (how many doses are already covered
-// by typical vaccination history for someone starting at that grade)
-export const CATCH_UP_DOSE_MAP: Record<string, Record<string, number>> = {
-  // Key: grade at entry, Value: doses already expected to have been given
-  // This represents the MINIMUM doses to be compliant for that grade
-  // These are vaccines to COMPLETE for school compliance
-  K: {
-    HepB: 3, DTaP: 5, IPV: 4, Hib: 4, PCV: 4, MMR: 2, Varicella: 2,
-    HepA: 2, MenACWY: 0, Tdap: 0, HPV: 0,
-  },
-  "1": {
-    HepB: 3, DTaP: 5, IPV: 4, Hib: 4, PCV: 4, MMR: 2, Varicella: 2,
-    HepA: 2, MenACWY: 0, Tdap: 0, HPV: 0,
-  },
-  "2": {
-    HepB: 3, DTaP: 5, IPV: 4, MMR: 2, Varicella: 2,
-    HepA: 2, MenACWY: 0, Tdap: 0, HPV: 0,
-  },
-  "3": {
-    HepB: 3, DTaP: 5, IPV: 4, MMR: 2, Varicella: 2,
-    HepA: 2, MenACWY: 0, Tdap: 0, HPV: 0,
-  },
-  "4": {
-    HepB: 3, DTaP: 5, IPV: 4, MMR: 2, Varicella: 2,
-    HepA: 2, MenACWY: 0, Tdap: 0, HPV: 0,
-  },
-  "5": {
-    HepB: 3, DTaP: 5, IPV: 4, MMR: 2, Varicella: 2,
-    HepA: 2, MenACWY: 0, Tdap: 0, HPV: 0,
-  },
-  "6": {
-    HepB: 3, DTaP: 5, IPV: 4, MMR: 2, Varicella: 2,
-    HepA: 2, MenACWY: 0, Tdap: 0, HPV: 0,
-  },
-  "7": {
-    HepB: 3, DTaP: 5, IPV: 4, MMR: 2, Varicella: 2,
-    HepA: 2, MenACWY: 1, Tdap: 1, HPV: 2,
-  },
-  "8": {
-    HepB: 3, DTaP: 5, IPV: 4, MMR: 2, Varicella: 2,
-    HepA: 2, MenACWY: 1, Tdap: 1, HPV: 2,
-  },
-  "9": {
-    HepB: 3, DTaP: 5, IPV: 4, MMR: 2, Varicella: 2,
-    HepA: 2, MenACWY: 1, Tdap: 1, HPV: 2,
-  },
-  "10": {
-    HepB: 3, DTaP: 5, IPV: 4, MMR: 2, Varicella: 2,
-    HepA: 2, MenACWY: 1, Tdap: 1, HPV: 2,
-  },
-  "11": {
-    HepB: 3, DTaP: 5, IPV: 4, MMR: 2, Varicella: 2,
-    HepA: 2, MenACWY: 1, Tdap: 1, HPV: 2,
-  },
-  "12": {
-    HepB: 3, DTaP: 5, IPV: 4, MMR: 2, Varicella: 2,
-    HepA: 2, MenACWY: 2, Tdap: 1, HPV: 2,
-  },
-};
+// Unused export kept for API compatibility — no longer used in scheduler
+export const CATCH_UP_DOSE_MAP: Record<string, Record<string, number>> = {};
