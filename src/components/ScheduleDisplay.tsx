@@ -28,6 +28,7 @@ interface Schedule {
   stateCode: string;
   stateName: string;
   startMode: "birth" | "catchup";
+  vaccineSet?: "school" | "cdc";
   entryGrade?: string;
   startDate: string;
   birthDate?: string;
@@ -104,7 +105,14 @@ export default function ScheduleDisplay({
                 {isBirth ? "Childhood Vaccine Schedule" : "Catch-Up Vaccine Schedule"}
               </h2>
               <p className="text-gray-500 mt-1">
-                {schedule.stateName} — {isBirth ? "Standard CDC Schedule (Birth)" : `Entry at Grade ${schedule.entryGrade}`}
+                {schedule.stateName} —{" "}
+                {isBirth
+                  ? `Standard CDC Schedule (Birth)`
+                  : `Entry at Grade ${schedule.entryGrade}`}
+                {" · "}
+                <span className={`font-medium ${schedule.vaccineSet === "cdc" ? "text-teal-700" : "text-blue-700"}`}>
+                  {schedule.vaccineSet === "cdc" ? "All CDC-Recommended Vaccines" : "State School Requirements Only"}
+                </span>
               </p>
               {schedule.birthDate && (
                 <p className="text-gray-600 mt-1 font-medium">

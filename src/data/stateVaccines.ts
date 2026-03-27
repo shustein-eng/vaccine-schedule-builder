@@ -3,6 +3,8 @@
 // Last verified against published requirements: 2024-2025 school year
 // IMPORTANT: Always verify with current state health department before clinical use.
 
+export type VaccineSet = "school" | "cdc";
+
 export type GradeLevel =
   | "PK"
   | "K"
@@ -720,6 +722,93 @@ export function getVaccinesForGrade(
 
   // Return all vaccines that are checked at or before the entry grade
   return state.requirements.filter((req) =>
+    req.entryGrades.some((g) => gradeOrder.indexOf(g) <= entryIdx)
+  );
+}
+
+// All CDC-recommended childhood & adolescent vaccines (regardless of state mandate)
+// Source: CDC Recommended Child & Adolescent Immunization Schedule 2024
+export const ALL_CDC_VACCINES: StateVaccineRequirement[] = [
+  {
+    vaccine: "Hepatitis B",
+    shortName: "HepB",
+    totalDoses: 3,
+    entryGrades: ["K"],
+  },
+  {
+    vaccine: "Diphtheria, Tetanus, Pertussis (DTaP)",
+    shortName: "DTaP",
+    totalDoses: 5,
+    entryGrades: ["K"],
+    notes: "5 doses; 4 doses acceptable if 4th dose given on or after 4th birthday",
+  },
+  {
+    vaccine: "Polio (IPV)",
+    shortName: "IPV",
+    totalDoses: 4,
+    entryGrades: ["K"],
+  },
+  {
+    vaccine: "Haemophilus influenzae type b (Hib)",
+    shortName: "Hib",
+    totalDoses: 4,
+    entryGrades: ["K"],
+    notes: "CDC recommends through age 59 months",
+  },
+  {
+    vaccine: "Pneumococcal Conjugate (PCV15/PCV20)",
+    shortName: "PCV",
+    totalDoses: 4,
+    entryGrades: ["K"],
+  },
+  {
+    vaccine: "Measles, Mumps, Rubella (MMR)",
+    shortName: "MMR",
+    totalDoses: 2,
+    entryGrades: ["K"],
+  },
+  {
+    vaccine: "Varicella (Chickenpox)",
+    shortName: "Varicella",
+    totalDoses: 2,
+    entryGrades: ["K"],
+    notes: "History of disease or lab evidence of immunity may substitute",
+  },
+  {
+    vaccine: "Hepatitis A",
+    shortName: "HepA",
+    totalDoses: 2,
+    entryGrades: ["K"],
+    notes: "2-dose series starting at 12 months; min 6 months between doses",
+  },
+  {
+    vaccine: "Tetanus, Diphtheria, Pertussis (Tdap)",
+    shortName: "Tdap",
+    totalDoses: 1,
+    entryGrades: ["7"],
+    notes: "Booster at age 11–12",
+  },
+  {
+    vaccine: "Meningococcal (MenACWY)",
+    shortName: "MenACWY",
+    totalDoses: 2,
+    entryGrades: ["7"],
+    notes: "Dose 1 at age 11–12; booster dose at age 16",
+  },
+  {
+    vaccine: "Human Papillomavirus (HPV)",
+    shortName: "HPV",
+    totalDoses: 2,
+    entryGrades: ["7"],
+    notes: "2-dose series starting at age 11–12; 3 doses if started at age 15+",
+  },
+];
+
+// Filter CDC vaccines relevant for a given catch-up entry grade
+export function getAllCDCVaccinesForGrade(entryGrade: GradeLevel): StateVaccineRequirement[] {
+  const gradeOrder: GradeLevel[] = ["PK", "K", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+  const entryIdx = gradeOrder.indexOf(entryGrade);
+  return ALL_CDC_VACCINES.filter((req) =>
     req.entryGrades.some((g) => gradeOrder.indexOf(g) <= entryIdx)
   );
 }

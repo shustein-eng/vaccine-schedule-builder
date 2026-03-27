@@ -4,8 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import ScheduleDisplay from "@/components/ScheduleDisplay";
 import { generateStandardSchedule, generateCatchUpSchedule } from "@/lib/scheduleGenerator";
-import { getVaccinesForGrade, STATE_VACCINE_DATA } from "@/data/stateVaccines";
-import type { GradeLevel } from "@/data/stateVaccines";
+import { getVaccinesForGrade, getAllCDCVaccinesForGrade, ALL_CDC_VACCINES, STATE_VACCINE_DATA } from "@/data/stateVaccines";
+import type { GradeLevel, VaccineSet } from "@/data/stateVaccines";
 
 const GRADES: { value: GradeLevel; label: string }[] = [
   { value: "PK", label: "Pre-K (age ~4)" },
@@ -75,6 +75,7 @@ function serializeSchedule(schedule: ReturnType<typeof generateStandardSchedule>
 export default function BuilderPage() {
   const [stateCode, setStateCode] = useState("");
   const [mode, setMode] = useState<Mode>("birth");
+  const [vaccineSet, setVaccineSet] = useState<VaccineSet>("school");
   const [birthDate, setBirthDate] = useState("");
   const [startDate, setStartDate] = useState("");
   const [entryGrade, setEntryGrade] = useState<GradeLevel>("K");
@@ -101,13 +102,16 @@ export default function BuilderPage() {
       // ── Generate schedule entirely in the browser — no API call needed ──
       let schedule;
       if (mode === "birth") {
+        const vaccines = vaccineSet === "cdc" ? ALL_CDC_VACCINES : stateData.requirements;
         schedule = generateStandardSchedule(
-          stateCode, stateData.name, new Date(birthDate), stateData.requirements
+          stateCode, stateData.name, new Date(birthDate), vaccines, vaccineSet
         );
       } else {
-        const gradeVaccines = getVaccinesForGrade(stateCode, entryGrade);
+        const vaccines = vaccineSet === "cdc"
+          ? getAllCDCVaccinesForGrade(entryGrade)
+          : getVaccinesForGrade(stateCode, entryGrade);
         schedule = generateCatchUpSchedule(
-          stateCode, stateData.name, new Date(startDate), entryGrade, gradeVaccines
+          stateCode, stateData.name, new Date(startDate), entryGrade, vaccines, vaccineSet
         );
       }
 
@@ -189,6 +193,27 @@ export default function BuilderPage() {
             </div>
           </div>
 
+          {/* Vaccine Set Toggle */}
+          <div className="border-b border-gray-200 p-6">
+            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Vaccines to Include</p>
+            <div className="flex gap-3">
+              <ModeButton
+                active={vaccineSet === "school"}
+                onClick={() => { setVaccineSet("school"); setResult(null); }}
+                icon="🏫"
+                title="State School Requirements"
+                desc={`Vaccines mandated for school entry in the selected state`}
+              />
+              <ModeButton
+                active={vaccineSet === "cdc"}
+                onClick={() => { setVaccineSet("cdc"); setResult(null); }}
+                icon="🏥"
+                title="All CDC-Recommended"
+                desc="Full CDC childhood & adolescent schedule regardless of state mandates"
+              />
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {/* State */}
             <div>
@@ -257,8 +282,8 @@ export default function BuilderPage() {
 
         {/* Info Cards */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <InfoCard color="blue" icon="📋" title="State Requirements"
-            body="Only vaccines mandated by your state's school-entry law are included — not all recommended vaccines." />
+          <InfoCard color="blue" icon="📋" title="Flexible Vaccine Set"
+            body="Choose state school-entry mandates only, or the full CDC-recommended schedule including Hib, PCV, HepA, MenACWY, and HPV." />
           <InfoCard color="teal" icon="🗓️" title="Smart Scheduling"
             body="Dates skip weekends, US federal holidays, and all Jewish Yomim Tovim including Chol HaMoed." />
           <InfoCard color="purple" icon="⏱️" title="CDC Intervals"

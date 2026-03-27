@@ -36,14 +36,14 @@ export default function HomePage() {
         </h1>
 
         <p className="text-xl md:text-2xl text-blue-100 max-w-3xl mb-4 leading-relaxed">
-          Generate a personalized, state-compliant vaccine schedule your patients can actually follow —
+          Generate a personalized vaccine schedule your patients can actually follow —
           with real appointment dates, no weekends, no holidays.
         </p>
 
         <p className="text-blue-200 max-w-2xl mb-12 leading-relaxed">
-          This tool is designed to help physicians counsel parents by producing a concrete,
-          printable schedule based on CDC recommendations and their state&apos;s school-entry
-          requirements. Parents leave the office knowing <em>exactly</em> when to bring
+          Choose between the <strong className="text-white">full CDC-recommended schedule</strong> or
+          only the <strong className="text-white">vaccines mandated for school entry</strong> in your
+          state. Parents leave the office knowing <em>exactly</em> when to bring
           their child in — down to the specific date.
         </p>
 
@@ -63,8 +63,8 @@ export default function HomePage() {
                   d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
               </svg>
             }
-            title="All 50 States"
-            body="School-entry vaccine requirements pulled from each state's health department and statutes — only required vaccines are scheduled."
+            title="All 50 States + Full CDC"
+            body="Choose between each state's school-entry mandates or the complete CDC-recommended childhood & adolescent schedule — your call."
           />
           <FeatureCard
             icon={

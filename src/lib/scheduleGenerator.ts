@@ -17,7 +17,7 @@
 //   - Varicella catch-up: 90-day minimum (correct for <13 years)
 //   - HPV catch-up: 154-day minimum (correct for 2-dose series <15 years)
 
-import { GradeLevel, StateVaccineRequirement } from "@/data/stateVaccines";
+import { GradeLevel, StateVaccineRequirement, VaccineSet } from "@/data/stateVaccines";
 import { CDC_SCHEDULE } from "@/data/cdcSchedule";
 import {
   addDays,
@@ -56,6 +56,7 @@ export interface GeneratedSchedule {
   stateCode: string;
   stateName: string;
   startMode: "birth" | "catchup";
+  vaccineSet: VaccineSet;
   entryGrade?: GradeLevel;
   startDate: Date;
   birthDate?: Date;
@@ -162,7 +163,8 @@ export function generateStandardSchedule(
   stateCode: string,
   stateName: string,
   birthDate: Date,
-  stateRequirements: StateVaccineRequirement[]
+  stateRequirements: StateVaccineRequirement[],
+  vaccineSet: VaccineSet = "school"
 ): GeneratedSchedule {
   const rng = seededRng(birthDate.getTime() % 999983);
   const startYear = birthDate.getFullYear();
@@ -267,7 +269,7 @@ export function generateStandardSchedule(
     }
   }
 
-  return buildResult(allDoses, stateCode, stateName, "birth", undefined, birthDate, birthDate);
+  return buildResult(allDoses, stateCode, stateName, "birth", vaccineSet, undefined, birthDate, birthDate);
 }
 
 // ─── Catch-up schedule ────────────────────────────────────────────────────────
@@ -277,7 +279,8 @@ export function generateCatchUpSchedule(
   stateName: string,
   startDate: Date,
   entryGrade: GradeLevel,
-  stateRequirements: StateVaccineRequirement[]
+  stateRequirements: StateVaccineRequirement[],
+  vaccineSet: VaccineSet = "school"
 ): GeneratedSchedule {
   const rng = seededRng(startDate.getTime() % 999983);
   const startYear = startDate.getFullYear();
@@ -421,7 +424,7 @@ export function generateCatchUpSchedule(
     }
   }
 
-  return buildResult(allDoses, stateCode, stateName, "catchup", entryGrade, startDate, undefined);
+  return buildResult(allDoses, stateCode, stateName, "catchup", vaccineSet, entryGrade, startDate, undefined);
 }
 
 // ─── Build final result ───────────────────────────────────────────────────────
@@ -431,6 +434,7 @@ function buildResult(
   stateCode: string,
   stateName: string,
   startMode: "birth" | "catchup",
+  vaccineSet: VaccineSet,
   entryGrade: GradeLevel | undefined,
   startDate: Date,
   birthDate: Date | undefined
@@ -461,6 +465,7 @@ function buildResult(
     stateCode,
     stateName,
     startMode,
+    vaccineSet,
     entryGrade,
     startDate,
     birthDate,
